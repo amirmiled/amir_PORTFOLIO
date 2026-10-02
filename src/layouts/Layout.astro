@@ -1,0 +1,118 @@
+---
+import "@fontsource-variable/montserrat";
+import { getAbsoluteLocaleUrl } from "astro:i18n";
+import { languages, profile, useTranslations, asset } from "@/i18n/ui";
+
+const lang = Astro.currentLocale ?? "fr";
+const t = useTranslations(lang);
+const canonical = getAbsoluteLocaleUrl(lang, "");
+const ogImage = new URL(asset("/og.image.png"), Astro.site).href;
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  name: profile.name,
+  url: profile.site,
+  image: ogImage,
+  email: `mailto:${profile.email}`,
+  sameAs: [profile.github],
+  jobTitle: t.meta.jobTitle,
+  description: t.meta.description,
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "Achères",
+    postalCode: "78260",
+    addressRegion: "Île-de-France",
+    addressCountry: "FR",
+  },
+  knowsLanguage: ["ar", "fr", "en", "de"],
+};
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="UTF-8" />
+    <title>{t.meta.title}</title>
+    <meta name="description" content={t.meta.description} />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href={asset("/favicon.png")} />
+    <link rel="canonical" href={canonical} />
+    {
+      Object.keys(languages).map((code) => (
+        <link
+          rel="alternate"
+          hreflang={code}
+          href={getAbsoluteLocaleUrl(code, "")}
+        />
+      ))
+    }
+    <link rel="alternate" hreflang="x-default" href={getAbsoluteLocaleUrl("fr", "")} />
+
+    <meta property="og:title" content={t.meta.title} />
+    <meta property="og:description" content={t.meta.description} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content={{ fr: "fr_FR", en: "en_US", de: "de_DE" }[lang]} />
+    <meta property="og:site_name" content={`${profile.name} Portfolio`} />
+
+    <!-- Structured Data (JSON-LD) -->
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  </head>
+  <body class="bg-[--background] sm:px-28 lg:px-20 px-9">
+    <slot />
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --background: #101010;
+    --sec: #a476ff;
+    --white: #dfdfdf;
+    --white-icon: #f3f3f398;
+    --white-icon-tr: #f3f3f310;
+  }
+
+  * {
+    font-family:
+      "Montserrat Variable",
+      -apple-system,
+      system-ui,
+      sans-serif;
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+  }
+
+  *::selection {
+    background-color: var(--sec);
+    color: var(--background);
+  }
+
+  /* Scrollbar styles */
+
+  ::-webkit-scrollbar {
+    width: 15px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--container);
+    border-radius: 30px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--background);
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--pink);
+  }
+
+  /* Scrollbar styles for Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line) var(--container);
+  }
+</style>

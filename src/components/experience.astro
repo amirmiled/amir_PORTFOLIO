@@ -1,0 +1,75 @@
+---
+import { useTranslations } from "@/i18n/ui";
+
+const t = useTranslations(Astro.currentLocale);
+---
+
+<section
+  id="experience"
+  class="py-12 border-t border-[#ffffff10] text-[var(--white)]"
+>
+  <div class="max-w-5xl mx-auto">
+    <h2 class="text-lg text-[var(--sec)] mb-2 shiny-sec">
+      {t.experience.kicker}
+    </h2>
+    <h3 class="text-4xl md:text-5xl font-medium mb-10">
+      {t.experience.title}
+    </h3>
+
+    <ol class="relative border-l border-[var(--white-icon-tr)] ml-2 space-y-10">
+      {
+        t.experience.items.map((job, index) => (
+          <li class="pl-6 md:pl-10 relative">
+            <span
+              class:list={[
+                "absolute -left-[7px] top-2 size-3 rounded-full ring-4 ring-[var(--background)]",
+                index === 0 ? "bg-[#A9FF5B]" : "bg-[var(--sec)]",
+              ]}
+            />
+            <div class="flex flex-col md:flex-row md:items-baseline md:justify-between gap-1 md:gap-6">
+              <h4 class="text-2xl font-semibold">{job.title}</h4>
+              <span class="text-sm text-[var(--white-icon)] whitespace-nowrap">
+                {job.period}
+              </span>
+            </div>
+            <p class="text-[var(--sec)] font-medium mt-1">
+              {job.org}
+              <span class="text-[var(--white-icon)] font-normal">
+                · {job.location}
+              </span>
+            </p>
+
+            <ul class="mt-4 space-y-2 text-[var(--white-icon)]">
+              {job.bullets.map((bullet) => (
+                <li class="flex items-start">
+                  <span class="pl-1">•</span>
+                  <span class="pl-3">{bullet}</span>
+                </li>
+              ))}
+            </ul>
+
+            {job.sub && (
+              <div class="mt-5">
+                <p class="text-sm uppercase tracking-wider text-[var(--white-icon)] mb-3">
+                  {job.subLabel}
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {job.sub.map((client) => (
+                    <div class="bg-[#1414149c] border border-[var(--white-icon-tr)] rounded-2xl p-4">
+                      <p class="font-semibold text-[var(--white)]">
+                        {client.name}
+                      </p>
+                      <p class="text-sm text-[var(--white-icon)] mt-1">
+                        {client.desc}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</section>

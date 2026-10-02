@@ -1,0 +1,187 @@
+---
+import { profile, useTranslations } from "@/i18n/ui";
+
+interface Props {
+  /** Classes for the trigger button */
+  class?: string;
+  /** Open the panel above (e.g. in the footer) or below the trigger */
+  placement?: "top" | "bottom";
+  /** Horizontal edge the panel is anchored to (flipped automatically near the screen edge) */
+  align?: "left" | "right";
+}
+
+const { class: className, placement = "bottom", align = "left" } = Astro.props;
+const t = useTranslations(Astro.currentLocale);
+const to = encodeURIComponent(profile.email);
+
+// Web compose URLs, so the link works even without a desktop mail client
+const services = [
+  { name: "Gmail", href: `https://mail.google.com/mail/?view=cm&fs=1&to=${to}` },
+  {
+    name: "Outlook",
+    href: `https://outlook.live.com/mail/0/deeplink/compose?to=${to}`,
+  },
+  { name: "Yahoo Mail", href: `https://compose.mail.yahoo.com/?to=${to}` },
+];
+
+const itemClass =
+  "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-[var(--white)] hover:bg-[var(--white-icon-tr)] focus:bg-[var(--white-icon-tr)] focus:outline-none transition-colors";
+---
+
+<div class="email-menu relative inline-flex">
+  <button
+    type="button"
+    class={className}
+    aria-haspopup="menu"
+    aria-expanded="false"
+    aria-label={t.emailMenu.trigger}
+    title={t.emailMenu.trigger}
+    data-email-trigger
+  >
+    <slot />
+  </button>
+
+  <div
+    role="menu"
+    hidden
+    data-email-panel
+    class:list={[
+      "absolute z-[110] w-60 rounded-2xl border border-[var(--white-icon-tr)] bg-[#161616] p-2 shadow-2xl",
+      placement === "top" ? "bottom-full mb-2" : "top-full mt-2",
+      align === "right" ? "right-0" : "left-0",
+    ]}
+  >
+    <p
+      class="px-3 pt-1 pb-2 text-xs uppercase tracking-wider text-[var(--white-icon)]"
+    >
+      {t.emailMenu.title}
+    </p>
+    {
+      services.map((service) => (
+        <a
+          role="menuitem"
+          href={service.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          class={itemClass}
+        >
+          <span class="size-1.5 rounded-full bg-[var(--sec)]" />
+          {service.name}
+        </a>
+      ))
+    }
+    <a role="menuitem" href={`mailto:${profile.email}`} class={itemClass}>
+      <span class="size-1.5 rounded-full bg-[var(--white-icon)]" />
+      {t.emailMenu.defaultApp}
+    </a>
+    <div class="my-2 border-t border-[var(--white-icon-tr)]"></div>
+    <button
+      type="button"
+      role="menuitem"
+      class={itemClass}
+      data-email-copy={profile.email}
+      data-copied={t.emailMenu.copied}
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        class="size-4 text-[var(--white-icon)]"
+        ><path
+          d="M7 6V3C7 2.44772 7.44772 2 8 2H20C20.5523 2 21 2.44772 21 3V17C21 17.5523 20.5523 18 20 18H17V20.9925C17 21.5489 16.551 22 15.9925 22H4.00748C3.45107 22 3 21.5551 3 20.9925L3.00026 7.00748C3.00035 6.45107 3.44932 6 4.00767 6H7ZM5.00277 8L5.00018 20H15V8H5.00277ZM9 6H17V16H19V4H9V6Z"
+        ></path></svg
+      >
+      <span data-email-copy-label>{t.emailMenu.copy}</span>
+    </button>
+    <p class="px-3 pt-1 pb-1 text-xs text-[var(--white-icon)] break-all">
+      {profile.email}
+    </p>
+  </div>
+</div>
+
+<script>
+  const menus = document.querySelectorAll<HTMLElement>(".email-menu");
+
+  function close(menu: HTMLElement) {
+    const panel = menu.querySelector<HTMLElement>("[data-email-panel]");
+    if (!panel || panel.hidden) return;
+    panel.hidden = true;
+    panel.style.left = panel.style.right = "";
+    menu
+      .querySelector("[data-email-trigger]")
+      ?.setAttribute("aria-expanded", "false");
+  }
+
+  function closeAll() {
+    menus.forEach(close);
+  }
+
+  // Keep the panel inside the viewport by flipping its anchored edge
+  function keepInView(panel: HTMLElement) {
+    const margin = 8;
+    const rect = panel.getBoundingClientRect();
+    if (rect.left < margin) {
+      panel.style.left = "0";
+      panel.style.right = "auto";
+    } else if (rect.right > window.innerWidth - margin) {
+      panel.style.right = "0";
+      panel.style.left = "auto";
+    }
+  }
+
+  async function copyText(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const input = document.createElement("textarea");
+      input.value = text;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      input.remove();
+    }
+  }
+
+  menus.forEach((menu) => {
+    const trigger = menu.querySelector<HTMLElement>("[data-email-trigger]");
+    const panel = menu.querySelector<HTMLElement>("[data-email-panel]");
+    if (!trigger || !panel) return;
+
+    trigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const opening = panel.hidden;
+      closeAll();
+      if (!opening) return;
+      panel.hidden = false;
+      trigger.setAttribute("aria-expanded", "true");
+      keepInView(panel);
+    });
+
+    panel.addEventListener("click", (e) => e.stopPropagation());
+
+    panel.querySelectorAll("a").forEach((link) =>
+      link.addEventListener("click", () => close(menu))
+    );
+
+    const copyButton = panel.querySelector<HTMLElement>("[data-email-copy]");
+    const copyLabel = panel.querySelector<HTMLElement>(
+      "[data-email-copy-label]"
+    );
+    copyButton?.addEventListener("click", async () => {
+      if (!copyLabel) return;
+      await copyText(copyButton.dataset.emailCopy ?? "");
+      // Remember the label once so repeated clicks never lock in the "copied" text
+      const original = (copyLabel.dataset.label ??= copyLabel.textContent ?? "");
+      copyLabel.textContent = copyButton.dataset.copied ?? "";
+      setTimeout(() => {
+        copyLabel.textContent = original;
+        close(menu);
+      }, 1200);
+    });
+  });
+
+  document.addEventListener("click", closeAll);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeAll();
+  });
+</script>
